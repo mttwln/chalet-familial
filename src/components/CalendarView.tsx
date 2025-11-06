@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useKV } from '@github/spark/hooks'
-import { Plus, X } from '@phosphor-icons/react'
+import { Plus, X, CaretLeft, CaretRight } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Member, Reservation } from '@/lib/types'
 import { toast } from 'sonner'
-import { format, isSameDay, isWithinInterval, startOfMonth, endOfMonth, eachDayOfInterval, isBefore, isAfter } from 'date-fns'
+import { format, isSameDay, isWithinInterval, startOfMonth, endOfMonth, eachDayOfInterval, isBefore, isAfter, startOfWeek, endOfWeek, addMonths, subMonths, addDays, isSameMonth } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import { DateRange } from 'react-day-picker'
 
@@ -82,7 +82,9 @@ export default function CalendarView() {
 
   const monthStart = startOfMonth(currentMonth)
   const monthEnd = endOfMonth(currentMonth)
-  const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd })
+  const calendarStart = startOfWeek(monthStart, { weekStartsOn: 1 })
+  const calendarEnd = endOfWeek(monthEnd, { weekStartsOn: 1 })
+  const calendarDays = eachDayOfInterval({ start: calendarStart, end: calendarEnd })
 
   const getReservationsForDay = (day: Date) => {
     return (reservations || []).filter(r => {
@@ -90,6 +92,13 @@ export default function CalendarView() {
       const end = new Date(r.endDate)
       return isWithinInterval(day, { start, end }) || isSameDay(day, start) || isSameDay(day, end)
     })
+  }
+
+  const weekDays = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim']
+
+  const weeks: Date[][] = []
+  for (let i = 0; i < calendarDays.length; i += 7) {
+    weeks.push(calendarDays.slice(i, i + 7))
   }
 
   return (
@@ -163,25 +172,91 @@ export default function CalendarView() {
       <div className="grid gap-6 lg:grid-cols-3">
         <Card className="lg:col-span-2">
           <CardHeader>
-            <CardTitle>Vue mensuelle</CardTitle>
-            <CardDescription>
-              {format(currentMonth, 'MMMM yyyy', { locale: fr })}
-            </CardDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>Vue mensuelle</CardTitle>
+                <CardDescription>
+                  {format(currentMonth, 'MMMM yyyy', { locale: fr })}
+                </CardDescription>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
+                >
+                  <CaretLeft size={20} />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
+                >
+                  <CaretRight size={20} />
+                </Button>
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
-            <Calendar
-              mode="single"
-              month={currentMonth}
-              onMonthChange={setCurrentMonth}
-              locale={fr}
-              className="rounded-md border"
-              modifiers={{
-                reserved: daysInMonth.filter(day => getReservationsForDay(day).length > 0)
-              }}
-              modifiersClassNames={{
-                reserved: 'bg-accent/20 font-semibold'
-              }}
-            />
+            <div className="border rounded-lg overflow-hidden">
+              <div className="grid grid-cols-7 bg-muted">
+                {weekDays.map((day) => (
+                  <div key={day} className="p-2 text-center text-sm font-medium border-r last:border-r-0">
+                    {day}
+                  </div>
+                ))}
+              </div>
+              {weeks.map((week, weekIndex) => (
+                <div key={weekIndex} className="grid grid-cols-7 border-t">
+                  {week.map((day) => {
+                    const dayReservations = getReservationsForDay(day)
+                    const isCurrentMonth = isSameMonth(day, currentMonth)
+                    const isToday = isSameDay(day, new Date())
+                    
+                    return (
+                      <div
+                        key={day.toISOString()}
+                        className={`min-h-24 p-2 border-r last:border-r-0 ${
+                          !isCurrentMonth ? 'bg-muted/30' : ''
+                        } ${isToday ? 'bg-accent/10' : ''}`}
+                      >
+                        <div className={`text-sm font-medium mb-1 ${
+                          !isCurrentMonth ? 'text-muted-foreground' : 'text-foreground'
+                        } ${isToday ? 'text-accent font-bold' : ''}`}>
+                          {format(day, 'd')}
+                        </div>
+                        {dayReservations.length > 0 && (
+                          <div className="flex flex-col gap-1">
+                            {dayReservations.slice(0, 2).map((res) => {
+                              const member = (members || []).find(m => m.id === res.memberId)
+                              return (
+                                <div
+                                  key={res.id}
+                                  className="text-xs px-1.5 py-0.5 rounded truncate"
+                                  style={{ 
+                                    backgroundColor: member?.avatarColor + '20',
+                                    color: member?.avatarColor,
+                                    borderLeft: `3px solid ${member?.avatarColor}`
+                                  }}
+                                  title={res.memberName}
+                                >
+                                  {res.memberName}
+                                </div>
+                              )
+                            })}
+                            {dayReservations.length > 2 && (
+                              <div className="text-xs text-muted-foreground px-1.5">
+                                +{dayReservations.length - 2} plus
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              ))}
+            </div>
           </CardContent>
         </Card>
 

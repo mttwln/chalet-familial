@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useKV } from '@github/spark/hooks'
 import { House, Calendar, CurrencyCircleDollar, Flame, Users, List, SignOut } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
@@ -18,6 +18,19 @@ function App() {
   const [currentMember, setCurrentMember] = useKV<Member | null>('current-member', null)
   const [members] = useKV<Member[]>('members', [])
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+
+  useEffect(() => {
+    if (currentMember && members && members.length > 0) {
+      const updatedMember = members.find(m => m.id === currentMember.id)
+      if (updatedMember && (
+        updatedMember.name !== currentMember.name ||
+        updatedMember.email !== currentMember.email ||
+        updatedMember.role !== currentMember.role
+      )) {
+        setCurrentMember(updatedMember)
+      }
+    }
+  }, [members, currentMember, setCurrentMember])
 
   const handleLogout = () => {
     setCurrentMember(null)
