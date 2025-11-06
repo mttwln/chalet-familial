@@ -194,7 +194,7 @@ export default function CalendarView() {
             {(reservations || []).length > 0 ? (
               <div className="flex flex-col gap-3">
                 {(reservations || [])
-                  .sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime())
+                  .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime())
                   .map((reservation) => {
                     const member = (members || []).find(m => m.id === reservation.memberId)
                     return (
