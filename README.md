@@ -71,4 +71,4 @@ Le fichier `vercel.json` est déjà configuré pour :
 
 ## 📝 License
 
-The Spark Template files and resources from GitHub are licensed under the terms of the MIT license, Copyright GitHub, Inc.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
