@@ -201,63 +201,61 @@ export default function CalendarView() {
             </div>
             
             <div className="border rounded-lg overflow-hidden">
-              <div className="grid grid-cols-7 bg-muted/50">
+              <div className="grid grid-cols-7 bg-muted/50 border-b">
                 {weekDays.map((day) => (
-                  <div key={day} className="p-3 text-center text-sm font-semibold text-foreground border-r last:border-r-0">
+                  <div key={day} className="px-3 py-2 text-center text-sm font-semibold text-foreground">
                     {day}
                   </div>
                 ))}
               </div>
-              {weeks.map((week, weekIndex) => (
-                <div key={weekIndex} className="grid grid-cols-7 border-t">
-                  {week.map((day) => {
-                    const dayReservations = getReservationsForDay(day)
-                    const isCurrentMonth = isSameMonth(day, currentMonth)
-                    const isToday = isSameDay(day, new Date())
-                    
-                    return (
-                      <div
-                        key={day.toISOString()}
-                        className={`min-h-[120px] p-3 border-r last:border-r-0 ${
-                          !isCurrentMonth ? 'bg-muted/20' : 'bg-card'
-                        } ${isToday ? 'bg-accent/5' : ''}`}
-                      >
-                        <div className={`text-lg font-semibold mb-2 ${
-                          !isCurrentMonth ? 'text-muted-foreground' : 'text-foreground'
-                        } ${isToday ? 'text-accent' : ''}`}>
-                          {format(day, 'd')}
-                        </div>
-                        {dayReservations.length > 0 && (
-                          <div className="flex flex-col gap-1">
-                            {dayReservations.slice(0, 2).map((res) => {
-                              const member = (members || []).find(m => m.id === res.memberId)
-                              return (
-                                <div
-                                  key={res.id}
-                                  className="text-xs px-2 py-1 rounded truncate"
-                                  style={{ 
-                                    backgroundColor: member?.avatarColor + '15',
-                                    color: member?.avatarColor,
-                                    borderLeft: `3px solid ${member?.avatarColor}`
-                                  }}
-                                  title={res.memberName}
-                                >
-                                  {res.memberName}
-                                </div>
-                              )
-                            })}
-                            {dayReservations.length > 2 && (
-                              <div className="text-xs text-muted-foreground px-2">
-                                +{dayReservations.length - 2}
-                              </div>
-                            )}
-                          </div>
-                        )}
+              <div className="grid grid-cols-7">
+                {calendarDays.map((day) => {
+                  const dayReservations = getReservationsForDay(day)
+                  const isCurrentMonth = isSameMonth(day, currentMonth)
+                  const isToday = isSameDay(day, new Date())
+                  
+                  return (
+                    <div
+                      key={day.toISOString()}
+                      className={`min-h-[120px] p-3 border-r border-b last:border-r-0 ${
+                        !isCurrentMonth ? 'bg-muted/20' : 'bg-card'
+                      } ${isToday ? 'bg-accent/5' : ''}`}
+                    >
+                      <div className={`text-lg font-semibold mb-2 ${
+                        !isCurrentMonth ? 'text-muted-foreground' : 'text-foreground'
+                      } ${isToday ? 'text-accent' : ''}`}>
+                        {format(day, 'd')}
                       </div>
-                    )
-                  })}
-                </div>
-              ))}
+                      {dayReservations.length > 0 && (
+                        <div className="flex flex-col gap-1">
+                          {dayReservations.slice(0, 2).map((res) => {
+                            const member = (members || []).find(m => m.id === res.memberId)
+                            return (
+                              <div
+                                key={res.id}
+                                className="text-xs px-2 py-1 rounded truncate"
+                                style={{ 
+                                  backgroundColor: member?.avatarColor + '15',
+                                  color: member?.avatarColor,
+                                  borderLeft: `3px solid ${member?.avatarColor}`
+                                }}
+                                title={res.memberName}
+                              >
+                                {res.memberName}
+                              </div>
+                            )
+                          })}
+                          {dayReservations.length > 2 && (
+                            <div className="text-xs text-muted-foreground px-2">
+                              +{dayReservations.length - 2}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
             </div>
           </CardContent>
         </Card>
