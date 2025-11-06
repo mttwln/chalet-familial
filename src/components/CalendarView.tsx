@@ -4,7 +4,6 @@ import { Plus, X, CaretLeft, CaretRight } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
-import { Calendar } from '@/components/ui/calendar'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
@@ -13,7 +12,6 @@ import { Member, Reservation } from '@/lib/types'
 import { toast } from 'sonner'
 import { format, isSameDay, isWithinInterval, startOfMonth, endOfMonth, eachDayOfInterval, isBefore, isAfter, startOfWeek, endOfWeek, addMonths, subMonths, addDays, isSameMonth } from 'date-fns'
 import { fr } from 'date-fns/locale'
-import { DateRange } from 'react-day-picker'
 
 export default function CalendarView() {
   const [currentMember] = useKV<Member | null>('current-member', null)
@@ -22,12 +20,36 @@ export default function CalendarView() {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [selectedMemberId, setSelectedMemberId] = useState<string>('')
   const [numberOfPeople, setNumberOfPeople] = useState('2')
-  const [dateRange, setDateRange] = useState<DateRange | undefined>()
+  const [selectionStartDate, setSelectionStartDate] = useState<Date | null>(null)
+  const [selectionEndDate, setSelectionEndDate] = useState<Date | null>(null)
+  const [dialogMonth, setDialogMonth] = useState(new Date())
+
+  const handleDayClick = (day: Date) => {
+    if (!selectionStartDate || (selectionStartDate && selectionEndDate)) {
+      setSelectionStartDate(day)
+      setSelectionEndDate(null)
+    } else if (selectionStartDate && !selectionEndDate) {
+      if (isBefore(day, selectionStartDate)) {
+        setSelectionEndDate(selectionStartDate)
+        setSelectionStartDate(day)
+      } else {
+        setSelectionEndDate(day)
+      }
+    }
+  }
+
+  const isDayInRange = (day: Date) => {
+    if (!selectionStartDate) return false
+    if (!selectionEndDate) return isSameDay(day, selectionStartDate)
+    return isWithinInterval(day, { start: selectionStartDate, end: selectionEndDate }) ||
+           isSameDay(day, selectionStartDate) ||
+           isSameDay(day, selectionEndDate)
+  }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!dateRange?.from || !dateRange?.to) {
+    if (!selectionStartDate || !selectionEndDate) {
       toast.error('Veuillez sélectionner une période')
       return
     }
@@ -44,9 +66,9 @@ export default function CalendarView() {
       const resStart = new Date(r.startDate)
       const resEnd = new Date(r.endDate)
       return (
-        (isAfter(dateRange.from!, resStart) && isBefore(dateRange.from!, resEnd)) ||
-        (isAfter(dateRange.to!, resStart) && isBefore(dateRange.to!, resEnd)) ||
-        (isBefore(dateRange.from!, resStart) && isAfter(dateRange.to!, resEnd))
+        (isAfter(selectionStartDate, resStart) && isBefore(selectionStartDate, resEnd)) ||
+        (isAfter(selectionEndDate, resStart) && isBefore(selectionEndDate, resEnd)) ||
+        (isBefore(selectionStartDate, resStart) && isAfter(selectionEndDate, resEnd))
       )
     })
 
@@ -59,8 +81,8 @@ export default function CalendarView() {
       id: Date.now().toString(),
       memberId: member.id,
       memberName: member.name,
-      startDate: dateRange.from.toISOString(),
-      endDate: dateRange.to.toISOString(),
+      startDate: selectionStartDate.toISOString(),
+      endDate: selectionEndDate.toISOString(),
       numberOfPeople: parseInt(numberOfPeople),
       status: 'confirmed'
     }
@@ -68,9 +90,11 @@ export default function CalendarView() {
     setReservations(current => [...(current || []), newReservation])
     toast.success('Réservation créée avec succès')
     setIsDialogOpen(false)
-    setDateRange(undefined)
+    setSelectionStartDate(null)
+    setSelectionEndDate(null)
     setSelectedMemberId('')
     setNumberOfPeople('2')
+    setDialogMonth(new Date())
   }
 
   const handleDelete = (id: string) => {
@@ -115,7 +139,7 @@ export default function CalendarView() {
               Nouvelle réservation
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Nouvelle réservation</DialogTitle>
               <DialogDescription>Réservez une période de séjour au chalet</DialogDescription>
@@ -140,16 +164,97 @@ export default function CalendarView() {
 
                 <div className="flex flex-col gap-2">
                   <Label>Période de séjour</Label>
-                  <div className="flex justify-center">
-                    <Calendar
-                      mode="range"
-                      selected={dateRange}
-                      onSelect={setDateRange}
-                      numberOfMonths={2}
-                      locale={fr}
-                      weekStartsOn={1}
-                      className="rounded-md border w-fit"
-                    />
+                  <div className="bg-muted/30 p-6 rounded-lg">
+                    <div className="flex items-center justify-between mb-6">
+                      <h3 className="text-xl font-semibold text-foreground">
+                        Vue mensuelle
+                      </h3>
+                      <p className="text-sm text-muted-foreground">
+                        {format(dialogMonth, 'MMMM yyyy', { locale: fr })}
+                      </p>
+                      <div className="flex gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          onClick={() => setDialogMonth(subMonths(dialogMonth, 1))}
+                        >
+                          <CaretLeft size={20} />
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          onClick={() => setDialogMonth(addMonths(dialogMonth, 1))}
+                        >
+                          <CaretRight size={20} />
+                        </Button>
+                      </div>
+                    </div>
+                    
+                    <div className="bg-card rounded-lg overflow-hidden border">
+                      <div className="grid grid-cols-7 bg-muted/50 border-b">
+                        {['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'].map((day) => (
+                          <div key={day} className="px-4 py-3 text-center text-base font-semibold text-foreground border-r last:border-r-0">
+                            {day}
+                          </div>
+                        ))}
+                      </div>
+                      <div className="grid grid-cols-7">
+                        {(() => {
+                          const monthStart = startOfMonth(dialogMonth)
+                          const monthEnd = endOfMonth(dialogMonth)
+                          const calendarStart = startOfWeek(monthStart, { weekStartsOn: 1 })
+                          const calendarEnd = endOfWeek(monthEnd, { weekStartsOn: 1 })
+                          const days = eachDayOfInterval({ start: calendarStart, end: calendarEnd })
+                          
+                          return days.map((day) => {
+                            const isCurrentMonth = isSameMonth(day, dialogMonth)
+                            const isSelected = isDayInRange(day)
+                            const isStartDay = selectionStartDate && isSameDay(day, selectionStartDate)
+                            const isEndDay = selectionEndDate && isSameDay(day, selectionEndDate)
+                            
+                            return (
+                              <button
+                                key={day.toISOString()}
+                                type="button"
+                                onClick={() => handleDayClick(day)}
+                                className={`min-h-[100px] p-4 border-r border-b last:border-r-0 text-left transition-colors ${
+                                  !isCurrentMonth ? 'bg-muted/20 text-muted-foreground' : 'bg-card text-foreground hover:bg-accent/5'
+                                } ${isSelected ? 'bg-accent/10 hover:bg-accent/15' : ''} ${
+                                  isStartDay || isEndDay ? 'bg-accent/20 hover:bg-accent/25 ring-2 ring-accent ring-inset' : ''
+                                }`}
+                              >
+                                <div className={`text-lg font-semibold ${
+                                  isStartDay || isEndDay ? 'text-accent' : ''
+                                }`}>
+                                  {format(day, 'd')}
+                                </div>
+                              </button>
+                            )
+                          })
+                        })()}
+                      </div>
+                    </div>
+
+                    {(selectionStartDate || selectionEndDate) && (
+                      <div className="mt-4 p-3 bg-card rounded-lg border">
+                        <p className="text-sm text-muted-foreground">
+                          {selectionStartDate && selectionEndDate ? (
+                            <>
+                              <span className="font-medium text-foreground">Période sélectionnée: </span>
+                              {format(selectionStartDate, 'dd MMM yyyy', { locale: fr })} - {format(selectionEndDate, 'dd MMM yyyy', { locale: fr })}
+                            </>
+                          ) : selectionStartDate ? (
+                            <>
+                              <span className="font-medium text-foreground">Date de début: </span>
+                              {format(selectionStartDate, 'dd MMM yyyy', { locale: fr })}
+                              <span className="text-xs ml-2">(Cliquez sur une date de fin)</span>
+                            </>
+                          ) : null}
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
 
