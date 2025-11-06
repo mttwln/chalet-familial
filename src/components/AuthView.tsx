@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useKV } from '@github/spark/hooks'
 import { House, Eye, EyeSlash, Gear } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
@@ -15,6 +15,10 @@ const AVATAR_COLORS = [
   '#EF4444', '#06B6D4', '#6366F1', '#84CC16', '#F97316'
 ]
 
+const DEFAULT_ADMIN_EMAIL = 'matthieu.weinlein@gmx.net'
+const DEFAULT_ADMIN_PASSWORD = 'Admin2024!'
+const DEFAULT_ADMIN_NAME = 'Matthieu Weinlein'
+
 export default function AuthView() {
   const [members, setMembers] = useKV<Member[]>('members', [])
   const [, setCurrentMember] = useKV<Member | null>('current-member', null)
@@ -28,6 +32,23 @@ export default function AuthView() {
     password: '', 
     confirmPassword: '' 
   })
+
+  useEffect(() => {
+    if (!members || members.length === 0) {
+      const adminMember: Member = {
+        id: Date.now().toString(),
+        name: DEFAULT_ADMIN_NAME,
+        email: DEFAULT_ADMIN_EMAIL,
+        password: DEFAULT_ADMIN_PASSWORD,
+        role: 'admin',
+        avatarColor: '#3B82F6'
+      }
+      setMembers([adminMember])
+      toast.success('Compte administrateur initialisé', {
+        description: `Email: ${DEFAULT_ADMIN_EMAIL}`
+      })
+    }
+  }, [])
 
   if (showDebug) {
     return <DataDebugView onClose={() => setShowDebug(false)} />
