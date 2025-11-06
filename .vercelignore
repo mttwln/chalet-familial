@@ -1,0 +1,35 @@
+# Dependencies
+node_modules
+
+# Build output (handled by Vercel)
+dist
+dist-ssr
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Development files
+.vscode
+.idea
+*.log
+*.pid
+
+# Test files
+coverage
+.nyc_output
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Git
+.git
+.gitignore
+
+# Spark specific
+.spark-workbench-id
+packages
+pids
+.file-manifest
