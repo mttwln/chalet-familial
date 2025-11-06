@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useKV } from '@github/spark/hooks'
-import { House, Eye, EyeSlash } from '@phosphor-icons/react'
+import { House, Eye, EyeSlash, Gear } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Member } from '@/lib/types'
 import { toast } from 'sonner'
+import DataDebugView from '@/components/DataDebugView'
 
 const AVATAR_COLORS = [
   '#3B82F6', '#8B5CF6', '#EC4899', '#10B981', '#F59E0B', 
@@ -18,6 +19,7 @@ export default function AuthView() {
   const [members, setMembers] = useKV<Member[]>('members', [])
   const [, setCurrentMember] = useKV<Member | null>('current-member', null)
   const [showPassword, setShowPassword] = useState(false)
+  const [showDebug, setShowDebug] = useState(false)
   
   const [loginData, setLoginData] = useState({ email: '', password: '' })
   const [registerData, setRegisterData] = useState({ 
@@ -26,6 +28,10 @@ export default function AuthView() {
     password: '', 
     confirmPassword: '' 
   })
+
+  if (showDebug) {
+    return <DataDebugView onClose={() => setShowDebug(false)} />
+  }
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault()
@@ -96,6 +102,16 @@ export default function AuthView() {
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <div className="absolute top-4 right-4">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setShowDebug(true)}
+          title="Voir les données stockées"
+        >
+          <Gear size={20} />
+        </Button>
+      </div>
       <Card className="max-w-md w-full">
         <CardHeader className="text-center">
           <div className="w-16 h-16 bg-primary rounded-2xl flex items-center justify-center mx-auto mb-4">
