@@ -146,6 +146,7 @@ export default function CalendarView() {
                     onSelect={setDateRange}
                     numberOfMonths={2}
                     locale={fr}
+                    weekStartsOn={1}
                     className="rounded-md border"
                   />
                 </div>
