@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useKV } from '@github/spark/hooks'
-import { House, Eye, EyeSlash, Gear } from '@phosphor-icons/react'
+import { House, Eye, EyeSlash, Gear, Copy, Check, Link } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Member } from '@/lib/types'
 import { toast } from 'sonner'
 import DataDebugView from '@/components/DataDebugView'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 
 const AVATAR_COLORS = [
   '#3B82F6', '#8B5CF6', '#EC4899', '#10B981', '#F59E0B', 
@@ -24,6 +25,7 @@ export default function AuthView() {
   const [, setCurrentMember] = useKV<Member | null>('current-member', null)
   const [showPassword, setShowPassword] = useState(false)
   const [showDebug, setShowDebug] = useState(false)
+  const [linkCopied, setLinkCopied] = useState(false)
   
   const [loginData, setLoginData] = useState({ email: '', password: '' })
   const [registerData, setRegisterData] = useState({ 
@@ -75,9 +77,8 @@ export default function AuthView() {
       return
     }
 
-    await window.spark.kv.set('current-member', member)
+    setCurrentMember(member)
     toast.success(`Bienvenue ${member.name}!`)
-    window.location.reload()
   }
 
   const handleRegister = async (e: React.FormEvent) => {
@@ -117,13 +118,24 @@ export default function AuthView() {
       avatarColor: AVATAR_COLORS[Math.floor(Math.random() * AVATAR_COLORS.length)]
     }
 
-    await window.spark.kv.set('members', [...currentMembers, newMember])
-    await window.spark.kv.set('current-member', newMember)
+    setMembers((current) => [...(current || []), newMember])
+    setCurrentMember(newMember)
     toast.success(isFirstUser ? 'Compte administrateur créé!' : 'Inscription réussie!')
-    window.location.reload()
   }
 
   const isFirstUser = !members || members.length === 0
+
+  const handleCopyLink = async () => {
+    const currentUrl = window.location.href
+    try {
+      await navigator.clipboard.writeText(currentUrl)
+      setLinkCopied(true)
+      toast.success('Lien copié dans le presse-papier!')
+      setTimeout(() => setLinkCopied(false), 3000)
+    } catch (err) {
+      toast.error('Impossible de copier le lien')
+    }
+  }
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
@@ -205,11 +217,38 @@ export default function AuthView() {
               </Button>
             </form>
           ) : (
-            <Tabs defaultValue="login" className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="login">Connexion</TabsTrigger>
-                <TabsTrigger value="register">Inscription</TabsTrigger>
-              </TabsList>
+            <>
+              <Alert className="mb-4 bg-muted/50 border-border">
+                <Link className="h-4 w-4" />
+                <AlertDescription className="ml-2 flex flex-col gap-2">
+                  <p className="text-sm font-medium text-foreground">Lien pour votre famille</p>
+                  <p className="text-xs text-muted-foreground">
+                    Partagez ce lien avec les membres de votre famille pour qu'ils puissent s'inscrire
+                  </p>
+                  <div className="flex gap-2 mt-1">
+                    <Input 
+                      readOnly 
+                      value={window.location.href} 
+                      className="text-xs"
+                    />
+                    <Button 
+                      size="sm" 
+                      variant="secondary"
+                      onClick={handleCopyLink}
+                      className="gap-2 shrink-0"
+                    >
+                      {linkCopied ? <Check size={16} /> : <Copy size={16} />}
+                      {linkCopied ? 'Copié' : 'Copier'}
+                    </Button>
+                  </div>
+                </AlertDescription>
+              </Alert>
+
+              <Tabs defaultValue="login" className="w-full">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="login">Connexion</TabsTrigger>
+                  <TabsTrigger value="register">Inscription</TabsTrigger>
+                </TabsList>
               
               <TabsContent value="login" className="mt-4">
                 <form onSubmit={handleLogin} className="flex flex-col gap-4">
@@ -304,6 +343,7 @@ export default function AuthView() {
                 </form>
               </TabsContent>
             </Tabs>
+            </>
           )}
         </CardContent>
       </Card>
