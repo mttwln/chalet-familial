@@ -214,16 +214,23 @@ export default function CalendarView() {
                             const isStartDay = selectionStartDate && isSameDay(day, selectionStartDate)
                             const isEndDay = selectionEndDate && isSameDay(day, selectionEndDate)
                             
+                            if (!isCurrentMonth) {
+                              return (
+                                <div
+                                  key={day.toISOString()}
+                                  className="min-h-[100px] p-4 border-r border-b last:border-r-0 bg-muted/10"
+                                />
+                              )
+                            }
+                            
                             return (
                               <button
                                 key={day.toISOString()}
                                 type="button"
                                 onClick={() => handleDayClick(day)}
-                                className={`min-h-[100px] p-4 border-r border-b last:border-r-0 text-left transition-colors ${
-                                  !isCurrentMonth ? 'bg-muted/20 text-muted-foreground' : 'bg-card text-foreground hover:bg-accent/5'
-                                } ${isSelected ? 'bg-accent/10 hover:bg-accent/15' : ''} ${
-                                  isStartDay || isEndDay ? 'bg-accent/20 hover:bg-accent/25 ring-2 ring-accent ring-inset' : ''
-                                }`}
+                                className={`min-h-[100px] p-4 border-r border-b last:border-r-0 text-left transition-colors bg-card text-foreground hover:bg-accent/5 ${
+                                  isSelected ? 'bg-accent/10 hover:bg-accent/15' : ''
+                                } ${isStartDay || isEndDay ? 'bg-accent/20 hover:bg-accent/25 ring-2 ring-accent ring-inset' : ''}`}
                               >
                                 <div className={`text-lg font-semibold ${
                                   isStartDay || isEndDay ? 'text-accent' : ''
@@ -319,16 +326,25 @@ export default function CalendarView() {
                   const isCurrentMonth = isSameMonth(day, currentMonth)
                   const isToday = isSameDay(day, new Date())
                   
+                  if (!isCurrentMonth) {
+                    return (
+                      <div
+                        key={day.toISOString()}
+                        className="min-h-[120px] p-3 border-r border-b last:border-r-0 bg-muted/10"
+                      />
+                    )
+                  }
+                  
                   return (
                     <div
                       key={day.toISOString()}
-                      className={`min-h-[120px] p-3 border-r border-b last:border-r-0 ${
-                        !isCurrentMonth ? 'bg-muted/20' : 'bg-card'
-                      } ${isToday ? 'bg-accent/5' : ''}`}
+                      className={`min-h-[120px] p-3 border-r border-b last:border-r-0 bg-card ${
+                        isToday ? 'bg-accent/5' : ''
+                      }`}
                     >
-                      <div className={`text-lg font-semibold mb-2 ${
-                        !isCurrentMonth ? 'text-muted-foreground' : 'text-foreground'
-                      } ${isToday ? 'text-accent' : ''}`}>
+                      <div className={`text-lg font-semibold mb-2 text-foreground ${
+                        isToday ? 'text-accent' : ''
+                      }`}>
                         {format(day, 'd')}
                       </div>
                       {dayReservations.length > 0 && (
