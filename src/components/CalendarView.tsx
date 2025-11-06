@@ -174,13 +174,13 @@ export default function CalendarView() {
 
       <div className="grid gap-6 lg:grid-cols-3">
         <Card className="lg:col-span-2">
-          <CardHeader>
-            <div className="flex items-center justify-between">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between mb-6">
               <div>
-                <CardTitle>Vue mensuelle</CardTitle>
-                <CardDescription>
+                <h3 className="text-2xl font-semibold text-foreground">Vue mensuelle</h3>
+                <p className="text-sm text-muted-foreground mt-0.5">
                   {format(currentMonth, 'MMMM yyyy', { locale: fr })}
-                </CardDescription>
+                </p>
               </div>
               <div className="flex gap-2">
                 <Button
@@ -199,12 +199,11 @@ export default function CalendarView() {
                 </Button>
               </div>
             </div>
-          </CardHeader>
-          <CardContent>
+            
             <div className="border rounded-lg overflow-hidden">
-              <div className="grid grid-cols-7 bg-muted">
+              <div className="grid grid-cols-7 bg-muted/50">
                 {weekDays.map((day) => (
-                  <div key={day} className="p-2 text-center text-sm font-medium border-r last:border-r-0">
+                  <div key={day} className="p-3 text-center text-sm font-semibold text-foreground border-r last:border-r-0">
                     {day}
                   </div>
                 ))}
@@ -219,13 +218,13 @@ export default function CalendarView() {
                     return (
                       <div
                         key={day.toISOString()}
-                        className={`min-h-24 p-2 border-r last:border-r-0 ${
-                          !isCurrentMonth ? 'bg-muted/30' : ''
-                        } ${isToday ? 'bg-accent/10' : ''}`}
+                        className={`min-h-[120px] p-3 border-r last:border-r-0 ${
+                          !isCurrentMonth ? 'bg-muted/20' : 'bg-card'
+                        } ${isToday ? 'bg-accent/5' : ''}`}
                       >
-                        <div className={`text-sm font-medium mb-1 ${
+                        <div className={`text-lg font-semibold mb-2 ${
                           !isCurrentMonth ? 'text-muted-foreground' : 'text-foreground'
-                        } ${isToday ? 'text-accent font-bold' : ''}`}>
+                        } ${isToday ? 'text-accent' : ''}`}>
                           {format(day, 'd')}
                         </div>
                         {dayReservations.length > 0 && (
@@ -235,9 +234,9 @@ export default function CalendarView() {
                               return (
                                 <div
                                   key={res.id}
-                                  className="text-xs px-1.5 py-0.5 rounded truncate"
+                                  className="text-xs px-2 py-1 rounded truncate"
                                   style={{ 
-                                    backgroundColor: member?.avatarColor + '20',
+                                    backgroundColor: member?.avatarColor + '15',
                                     color: member?.avatarColor,
                                     borderLeft: `3px solid ${member?.avatarColor}`
                                   }}
@@ -248,8 +247,8 @@ export default function CalendarView() {
                               )
                             })}
                             {dayReservations.length > 2 && (
-                              <div className="text-xs text-muted-foreground px-1.5">
-                                +{dayReservations.length - 2} plus
+                              <div className="text-xs text-muted-foreground px-2">
+                                +{dayReservations.length - 2}
                               </div>
                             )}
                           </div>
