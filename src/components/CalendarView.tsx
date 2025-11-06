@@ -115,7 +115,7 @@ export default function CalendarView() {
               Nouvelle réservation
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Nouvelle réservation</DialogTitle>
               <DialogDescription>Réservez une période de séjour au chalet</DialogDescription>
@@ -140,15 +140,17 @@ export default function CalendarView() {
 
                 <div className="flex flex-col gap-2">
                   <Label>Période de séjour</Label>
-                  <Calendar
-                    mode="range"
-                    selected={dateRange}
-                    onSelect={setDateRange}
-                    numberOfMonths={2}
-                    locale={fr}
-                    weekStartsOn={1}
-                    className="rounded-md border"
-                  />
+                  <div className="flex justify-center">
+                    <Calendar
+                      mode="range"
+                      selected={dateRange}
+                      onSelect={setDateRange}
+                      numberOfMonths={2}
+                      locale={fr}
+                      weekStartsOn={1}
+                      className="rounded-md border w-fit"
+                    />
+                  </div>
                 </div>
 
                 <div className="flex flex-col gap-2">
