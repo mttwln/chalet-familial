@@ -54,7 +54,7 @@ export default function AuthView() {
     return <DataDebugView onClose={() => setShowDebug(false)} />
   }
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
 
     if (!loginData.email.trim() || !loginData.password.trim()) {
@@ -62,7 +62,8 @@ export default function AuthView() {
       return
     }
 
-    const member = (members || []).find(m => m.email === loginData.email)
+    const currentMembers = await window.spark.kv.get<Member[]>('members') || []
+    const member = currentMembers.find(m => m.email === loginData.email)
     
     if (!member) {
       toast.error('Email non trouvé')
@@ -74,11 +75,12 @@ export default function AuthView() {
       return
     }
 
-    setCurrentMember(member)
+    await window.spark.kv.set('current-member', member)
     toast.success(`Bienvenue ${member.name}!`)
+    window.location.reload()
   }
 
-  const handleRegister = (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault()
 
     if (!registerData.name.trim() || !registerData.email.trim() || 
@@ -97,13 +99,14 @@ export default function AuthView() {
       return
     }
 
-    const emailExists = (members || []).some(m => m.email === registerData.email)
+    const currentMembers = await window.spark.kv.get<Member[]>('members') || []
+    const emailExists = currentMembers.some(m => m.email === registerData.email)
     if (emailExists) {
       toast.error('Cet email est déjà utilisé')
       return
     }
 
-    const isFirstUser = !members || members.length === 0
+    const isFirstUser = currentMembers.length === 0
 
     const newMember: Member = {
       id: Date.now().toString(),
@@ -114,9 +117,10 @@ export default function AuthView() {
       avatarColor: AVATAR_COLORS[Math.floor(Math.random() * AVATAR_COLORS.length)]
     }
 
-    setMembers(current => [...(current || []), newMember])
-    setCurrentMember(newMember)
+    await window.spark.kv.set('members', [...currentMembers, newMember])
+    await window.spark.kv.set('current-member', newMember)
     toast.success(isFirstUser ? 'Compte administrateur créé!' : 'Inscription réussie!')
+    window.location.reload()
   }
 
   const isFirstUser = !members || members.length === 0
