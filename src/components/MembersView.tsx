@@ -24,7 +24,7 @@ export default function MembersView({ isFirstTime = false }: MembersViewProps) {
   const [currentMember, setCurrentMember] = useKV<Member | null>('current-member', null)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingMember, setEditingMember] = useState<Member | null>(null)
-  const [formData, setFormData] = useState({ name: '', email: '', role: 'user' as 'admin' | 'user' })
+  const [formData, setFormData] = useState({ name: '', email: '', password: '', role: 'user' as 'admin' | 'user' })
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -36,14 +36,26 @@ export default function MembersView({ isFirstTime = false }: MembersViewProps) {
 
     if (editingMember) {
       setMembers(current => 
-        (current || []).map(m => m.id === editingMember.id ? { ...m, ...formData } : m)
+        (current || []).map(m => m.id === editingMember.id ? { 
+          ...m, 
+          name: formData.name,
+          email: formData.email,
+          role: formData.role,
+          ...(formData.password ? { password: formData.password } : {})
+        } : m)
       )
       toast.success('Membre mis à jour')
     } else {
+      if (!formData.password || formData.password.length < 6) {
+        toast.error('Le mot de passe doit contenir au moins 6 caractères')
+        return
+      }
+
       const newMember: Member = {
         id: Date.now().toString(),
         name: formData.name,
         email: formData.email,
+        password: formData.password,
         role: isFirstTime && (members || []).length === 0 ? 'admin' : formData.role,
         avatarColor: AVATAR_COLORS[Math.floor(Math.random() * AVATAR_COLORS.length)]
       }
@@ -58,12 +70,12 @@ export default function MembersView({ isFirstTime = false }: MembersViewProps) {
 
     setIsDialogOpen(false)
     setEditingMember(null)
-    setFormData({ name: '', email: '', role: 'user' })
+    setFormData({ name: '', email: '', password: '', role: 'user' })
   }
 
   const handleEdit = (member: Member) => {
     setEditingMember(member)
-    setFormData({ name: member.name, email: member.email, role: member.role })
+    setFormData({ name: member.name, email: member.email, password: '', role: member.role })
     setIsDialogOpen(true)
   }
 
@@ -81,92 +93,6 @@ export default function MembersView({ isFirstTime = false }: MembersViewProps) {
     toast.success(`Connecté en tant que ${member.name}`)
   }
 
-  if (isFirstTime) {
-    if ((members || []).length === 0) {
-      return (
-        <Card className="max-w-md mx-auto">
-          <CardHeader>
-            <CardTitle>Bienvenue au Chalet Familial</CardTitle>
-            <CardDescription>Créez le premier compte administrateur</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="name">Nom complet</Label>
-                <Input
-                  id="name"
-                  value={formData.name}
-                  onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                  placeholder="Jean Dupont"
-                />
-              </div>
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                  placeholder="jean@exemple.fr"
-                />
-              </div>
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="role">Rôle</Label>
-                <Select value="admin" onValueChange={(value: 'admin' | 'user') => setFormData(prev => ({ ...prev, role: value }))}>
-                  <SelectTrigger id="role">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="admin">Administrateur</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <Button type="submit" className="w-full">Créer mon profil administrateur</Button>
-            </form>
-          </CardContent>
-        </Card>
-      )
-    } else {
-      return (
-        <Card className="max-w-md mx-auto">
-          <CardHeader>
-            <CardTitle>Connexion</CardTitle>
-            <CardDescription>Sélectionnez votre profil pour continuer</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-col gap-3">
-              {(members || []).map((member) => (
-                <button
-                  key={member.id}
-                  onClick={() => handleSelectMember(member)}
-                  className="flex items-center gap-3 p-4 border border-border rounded-lg hover:bg-accent/10 transition-colors"
-                >
-                  <div 
-                    className="w-12 h-12 rounded-full flex items-center justify-center text-white font-semibold text-lg flex-shrink-0"
-                    style={{ backgroundColor: member.avatarColor }}
-                  >
-                    {member.name.charAt(0).toUpperCase()}
-                  </div>
-                  <div className="flex-1 text-left">
-                    <p className="font-semibold text-foreground">{member.name}</p>
-                    <p className="text-sm text-muted-foreground">{member.email}</p>
-                    <span className={`text-xs px-2 py-1 rounded-full inline-block mt-1 ${
-                      member.role === 'admin' 
-                        ? 'bg-accent text-accent-foreground' 
-                        : 'bg-secondary text-secondary-foreground'
-                    }`}>
-                      {member.role === 'admin' ? 'Administrateur' : 'Utilisateur'}
-                    </span>
-                  </div>
-                </button>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )
-    }
-  }
-
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
@@ -178,7 +104,7 @@ export default function MembersView({ isFirstTime = false }: MembersViewProps) {
           setIsDialogOpen(open)
           if (!open) {
             setEditingMember(null)
-            setFormData({ name: '', email: '', role: 'user' })
+            setFormData({ name: '', email: '', password: '', role: 'user' })
           }
         }}>
           <DialogTrigger asChild>
@@ -213,6 +139,18 @@ export default function MembersView({ isFirstTime = false }: MembersViewProps) {
                     value={formData.email}
                     onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
                     placeholder="jean@exemple.fr"
+                  />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="edit-password">
+                    {editingMember ? 'Nouveau mot de passe (laisser vide pour ne pas changer)' : 'Mot de passe'}
+                  </Label>
+                  <Input
+                    id="edit-password"
+                    type="password"
+                    value={formData.password}
+                    onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
+                    placeholder={editingMember ? 'Optionnel' : 'Au moins 6 caractères'}
                   />
                 </div>
                 <div className="flex flex-col gap-2">

@@ -9,6 +9,7 @@ import CalendarView from '@/components/CalendarView'
 import FinancesView from '@/components/FinancesView'
 import ConsumptionView from '@/components/ConsumptionView'
 import MembersView from '@/components/MembersView'
+import AuthView from '@/components/AuthView'
 import { toast } from 'sonner'
 
 type View = 'dashboard' | 'calendar' | 'finances' | 'consumption' | 'members'
@@ -68,11 +69,7 @@ function App() {
   }
 
   if (!currentMember) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <MembersView isFirstTime />
-      </div>
-    )
+    return <AuthView />
   }
 
   return (
