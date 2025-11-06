@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useKV } from '@github/spark/hooks'
-import { House, Calendar, CurrencyCircleDollar, Flame, Users, List } from '@phosphor-icons/react'
+import { House, Calendar, CurrencyCircleDollar, Flame, Users, List, SignOut } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
 import { Member } from '@/lib/types'
@@ -9,14 +9,20 @@ import CalendarView from '@/components/CalendarView'
 import FinancesView from '@/components/FinancesView'
 import ConsumptionView from '@/components/ConsumptionView'
 import MembersView from '@/components/MembersView'
+import { toast } from 'sonner'
 
 type View = 'dashboard' | 'calendar' | 'finances' | 'consumption' | 'members'
 
 function App() {
   const [currentView, setCurrentView] = useState<View>('dashboard')
-  const [currentMember] = useKV<Member | null>('current-member', null)
+  const [currentMember, setCurrentMember] = useKV<Member | null>('current-member', null)
   const [members] = useKV<Member[]>('members', [])
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+
+  const handleLogout = () => {
+    setCurrentMember(null)
+    toast.success('Déconnexion réussie')
+  }
 
   const navItems = [
     { id: 'dashboard' as View, label: 'Accueil', icon: House },
@@ -111,6 +117,18 @@ function App() {
                     </Button>
                   )
                 })}
+                <div className="border-t border-border mt-4 pt-4">
+                  <div className="flex items-center gap-2 px-3 py-2 mb-3">
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-white font-semibold text-sm" style={{ backgroundColor: currentMember.avatarColor }}>
+                      {currentMember.name.charAt(0).toUpperCase()}
+                    </div>
+                    <span className="text-sm font-medium text-foreground">{currentMember.name}</span>
+                  </div>
+                  <Button variant="ghost" onClick={handleLogout} className="gap-2 justify-start w-full">
+                    <SignOut size={18} />
+                    Déconnexion
+                  </Button>
+                </div>
               </nav>
             </SheetContent>
           </Sheet>
@@ -120,6 +138,9 @@ function App() {
               {currentMember.name.charAt(0).toUpperCase()}
             </div>
             <span className="text-sm font-medium text-foreground">{currentMember.name}</span>
+            <Button variant="ghost" size="icon" onClick={handleLogout} title="Déconnexion">
+              <SignOut size={20} />
+            </Button>
           </div>
         </div>
       </header>

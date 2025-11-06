@@ -44,7 +44,7 @@ export default function MembersView({ isFirstTime = false }: MembersViewProps) {
         id: Date.now().toString(),
         name: formData.name,
         email: formData.email,
-        role: formData.role,
+        role: isFirstTime && (members || []).length === 0 ? 'admin' : formData.role,
         avatarColor: AVATAR_COLORS[Math.floor(Math.random() * AVATAR_COLORS.length)]
       }
       setMembers(current => [...(current || []), newMember])
@@ -53,7 +53,7 @@ export default function MembersView({ isFirstTime = false }: MembersViewProps) {
         setCurrentMember(newMember)
       }
       
-      toast.success('Membre ajouté')
+      toast.success(isFirstTime ? 'Profil créé avec succès' : 'Membre ajouté')
     }
 
     setIsDialogOpen(false)
@@ -82,50 +82,89 @@ export default function MembersView({ isFirstTime = false }: MembersViewProps) {
   }
 
   if (isFirstTime) {
-    return (
-      <Card className="max-w-md mx-auto">
-        <CardHeader>
-          <CardTitle>Bienvenue au Chalet Familial</CardTitle>
-          <CardDescription>Créez votre profil pour commencer</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="name">Nom complet</Label>
-              <Input
-                id="name"
-                value={formData.name}
-                onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                placeholder="Jean Dupont"
-              />
+    if ((members || []).length === 0) {
+      return (
+        <Card className="max-w-md mx-auto">
+          <CardHeader>
+            <CardTitle>Bienvenue au Chalet Familial</CardTitle>
+            <CardDescription>Créez le premier compte administrateur</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="name">Nom complet</Label>
+                <Input
+                  id="name"
+                  value={formData.name}
+                  onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                  placeholder="Jean Dupont"
+                />
+              </div>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                  placeholder="jean@exemple.fr"
+                />
+              </div>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="role">Rôle</Label>
+                <Select value="admin" onValueChange={(value: 'admin' | 'user') => setFormData(prev => ({ ...prev, role: value }))}>
+                  <SelectTrigger id="role">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="admin">Administrateur</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button type="submit" className="w-full">Créer mon profil administrateur</Button>
+            </form>
+          </CardContent>
+        </Card>
+      )
+    } else {
+      return (
+        <Card className="max-w-md mx-auto">
+          <CardHeader>
+            <CardTitle>Connexion</CardTitle>
+            <CardDescription>Sélectionnez votre profil pour continuer</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col gap-3">
+              {(members || []).map((member) => (
+                <button
+                  key={member.id}
+                  onClick={() => handleSelectMember(member)}
+                  className="flex items-center gap-3 p-4 border border-border rounded-lg hover:bg-accent/10 transition-colors"
+                >
+                  <div 
+                    className="w-12 h-12 rounded-full flex items-center justify-center text-white font-semibold text-lg flex-shrink-0"
+                    style={{ backgroundColor: member.avatarColor }}
+                  >
+                    {member.name.charAt(0).toUpperCase()}
+                  </div>
+                  <div className="flex-1 text-left">
+                    <p className="font-semibold text-foreground">{member.name}</p>
+                    <p className="text-sm text-muted-foreground">{member.email}</p>
+                    <span className={`text-xs px-2 py-1 rounded-full inline-block mt-1 ${
+                      member.role === 'admin' 
+                        ? 'bg-accent text-accent-foreground' 
+                        : 'bg-secondary text-secondary-foreground'
+                    }`}>
+                      {member.role === 'admin' ? 'Administrateur' : 'Utilisateur'}
+                    </span>
+                  </div>
+                </button>
+              ))}
             </div>
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                value={formData.email}
-                onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                placeholder="jean@exemple.fr"
-              />
-            </div>
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="role">Rôle</Label>
-              <Select value={formData.role} onValueChange={(value: 'admin' | 'user') => setFormData(prev => ({ ...prev, role: value }))}>
-                <SelectTrigger id="role">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="admin">Administrateur</SelectItem>
-                  <SelectItem value="user">Utilisateur</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <Button type="submit" className="w-full">Créer mon profil</Button>
-          </form>
-        </CardContent>
-      </Card>
-    )
+          </CardContent>
+        </Card>
+      )
+    }
   }
 
   return (
