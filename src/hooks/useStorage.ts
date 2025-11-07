@@ -40,7 +40,7 @@ export function useStorage<T>(key: string, defaultValue: T): [T, (value: T) => P
     return () => {
       mounted = false
     }
-  }, [key]) // Only run when key changes
+  }, [key, defaultValue]) // Include defaultValue in dependencies
 
   // Update value in storage
   const updateValue = useCallback(
