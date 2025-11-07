@@ -25,9 +25,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ error: 'Le mot de passe doit contenir au moins 6 caractères' });
     }
 
+    // Normalize email to lowercase for consistency
+    const normalizedEmail = email.toLowerCase();
+
     // Check if email already exists (case-insensitive)
     const existingUser = await sql`
-      SELECT id FROM members WHERE LOWER(email) = LOWER(${email})
+      SELECT id FROM members WHERE LOWER(email) = ${normalizedEmail}
     `;
 
     if (existingUser.rows.length > 0) {
@@ -44,9 +47,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // Random avatar color
     const avatarColor = AVATAR_COLORS[Math.floor(Math.random() * AVATAR_COLORS.length)];
-
-    // Normalize email to lowercase for consistency
-    const normalizedEmail = email.toLowerCase();
 
     // Insert new user
     const result = await sql`

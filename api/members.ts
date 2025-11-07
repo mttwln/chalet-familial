@@ -51,7 +51,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       // Check if email is already used by another member (case-insensitive)
       const existingUser = await sql`
-        SELECT id FROM members WHERE LOWER(email) = LOWER(${email}) AND id != ${parseInt(id)}
+        SELECT id FROM members WHERE LOWER(email) = ${normalizedEmail} AND id != ${parseInt(id)}
       `;
 
       if (existingUser.rows.length > 0) {
