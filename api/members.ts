@@ -46,9 +46,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(400).json({ error: 'Données manquantes' });
       }
 
+      // Normalize email to lowercase for consistency
+      const normalizedEmail = email.toLowerCase();
+
+      // Check if email is already used by another member (case-insensitive)
+      const existingUser = await sql`
+        SELECT id FROM members WHERE LOWER(email) = LOWER(${email}) AND id != ${parseInt(id)}
+      `;
+
+      if (existingUser.rows.length > 0) {
+        return res.status(400).json({ error: 'Cet email est déjà utilisé par un autre membre' });
+      }
+
       const result = await sql`
         UPDATE members
-        SET name = ${name}, email = ${email}, role = ${role}
+        SET name = ${name}, email = ${normalizedEmail}, role = ${role}
         WHERE id = ${parseInt(id)}
         RETURNING id, name, email, role, avatar_color
       `;

@@ -16,11 +16,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ error: 'Email et mot de passe requis' });
     }
 
-    // Find user by email
+    // Find user by email (case-insensitive)
     const result = await sql`
       SELECT id, name, email, password_hash, role, avatar_color
       FROM members
-      WHERE email = ${email}
+      WHERE LOWER(email) = LOWER(${email})
     `;
 
     if (result.rows.length === 0) {
