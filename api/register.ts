@@ -25,9 +25,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ error: 'Le mot de passe doit contenir au moins 6 caractères' });
     }
 
-    // Check if email already exists
+    // Normalize email to lowercase for consistency
+    const normalizedEmail = email.toLowerCase();
+
+    // Check if email already exists (case-insensitive)
     const existingUser = await sql`
-      SELECT id FROM members WHERE email = ${email}
+      SELECT id FROM members WHERE LOWER(email) = ${normalizedEmail}
     `;
 
     if (existingUser.rows.length > 0) {
@@ -48,7 +51,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Insert new user
     const result = await sql`
       INSERT INTO members (name, email, password_hash, role, avatar_color)
-      VALUES (${name}, ${email}, ${passwordHash}, ${role}, ${avatarColor})
+      VALUES (${name}, ${normalizedEmail}, ${passwordHash}, ${role}, ${avatarColor})
       RETURNING id, name, email, role, avatar_color, created_at
     `;
 
