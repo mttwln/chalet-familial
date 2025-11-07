@@ -58,13 +58,15 @@ const result = await sql`
   WHERE LOWER(email) = LOWER(${email})
 `;
 
+// Register - normalize email first
+const normalizedEmail = email.toLowerCase();
+
 // Register query (case-insensitive)
 const existingUser = await sql`
-  SELECT id FROM members WHERE LOWER(email) = LOWER(${email})
+  SELECT id FROM members WHERE LOWER(email) = ${normalizedEmail}
 `;
 
-// Normalize email before insert
-const normalizedEmail = email.toLowerCase();
+// Insert with normalized email
 VALUES (${name}, ${normalizedEmail}, ${passwordHash}, ${role}, ${avatarColor})
 ```
 
