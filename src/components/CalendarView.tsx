@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useKV } from '@github/spark/hooks'
+import { useStorage } from '@/hooks/useStorage'
 import { Plus, X, CaretLeft, CaretRight } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -14,9 +14,9 @@ import { format, isSameDay, isWithinInterval, startOfMonth, endOfMonth, eachDayO
 import { fr } from 'date-fns/locale'
 
 export default function CalendarView() {
-  const [currentMember] = useKV<Member | null>('current-member', null)
-  const [members] = useKV<Member[]>('members', [])
-  const [reservations, setReservations] = useKV<Reservation[]>('reservations', [])
+  const [currentMember] = useStorage<Member | null>('current-member', null)
+  const [members] = useStorage<Member[]>('members', [])
+  const [reservations, setReservations] = useStorage<Reservation[]>('reservations', [])
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [selectedMemberId, setSelectedMemberId] = useState<string>('')
   const [numberOfPeople, setNumberOfPeople] = useState('2')

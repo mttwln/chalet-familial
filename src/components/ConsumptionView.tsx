@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useKV } from '@github/spark/hooks'
+import { useStorage } from '@/hooks/useStorage'
 import { Plus, Flame, Lightning, TrendUp } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -15,8 +15,8 @@ import { fr } from 'date-fns/locale'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts'
 
 export default function ConsumptionView() {
-  const [currentMember] = useKV<Member | null>('current-member', null)
-  const [consumptionRecords, setConsumptionRecords] = useKV<ConsumptionRecord[]>('consumption-records', [])
+  const [currentMember] = useStorage<Member | null>('current-member', null)
+  const [consumptionRecords, setConsumptionRecords] = useStorage<ConsumptionRecord[]>('consumption-records', [])
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [formData, setFormData] = useState({
     type: 'fioul' as 'fioul' | 'electricite',
