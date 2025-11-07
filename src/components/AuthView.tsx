@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useKV } from '@github/spark/hooks'
+import { useStorage } from '@/hooks/useStorage'
 import { House, Eye, EyeSlash, Gear, Copy, Check, Link } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -10,6 +10,7 @@ import { Member } from '@/lib/types'
 import { toast } from 'sonner'
 import DataDebugView from '@/components/DataDebugView'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { storage } from '@/lib/storage'
 
 const AVATAR_COLORS = [
   '#3B82F6', '#8B5CF6', '#EC4899', '#10B981', '#F59E0B', 
@@ -21,8 +22,8 @@ const DEFAULT_ADMIN_PASSWORD = 'Admin2024!'
 const DEFAULT_ADMIN_NAME = 'Matthieu Weinlein'
 
 export default function AuthView() {
-  const [members, setMembers] = useKV<Member[]>('members', [])
-  const [, setCurrentMember] = useKV<Member | null>('current-member', null)
+  const [members, setMembers] = useStorage<Member[]>('members', [])
+  const [, setCurrentMember] = useStorage<Member | null>('current-member', null)
   const [showPassword, setShowPassword] = useState(false)
   const [showDebug, setShowDebug] = useState(false)
   const [linkCopied, setLinkCopied] = useState(false)
@@ -36,19 +37,25 @@ export default function AuthView() {
   })
 
   useEffect(() => {
-    if (!members || members.length === 0) {
-      const adminMember: Member = {
-        id: Date.now().toString(),
-        name: DEFAULT_ADMIN_NAME,
-        email: DEFAULT_ADMIN_EMAIL,
-        password: DEFAULT_ADMIN_PASSWORD,
-        role: 'admin',
-        avatarColor: '#3B82F6'
+    // Only initialize default admin if there are truly no members
+    // Don't run this if members array is just loading
+    if (members && members.length === 0) {
+      // Check localStorage directly to avoid race condition
+      const storedMembers = localStorage.getItem('chalet-familial:members')
+      if (!storedMembers || storedMembers === '[]') {
+        const adminMember: Member = {
+          id: Date.now().toString(),
+          name: DEFAULT_ADMIN_NAME,
+          email: DEFAULT_ADMIN_EMAIL,
+          password: DEFAULT_ADMIN_PASSWORD,
+          role: 'admin',
+          avatarColor: '#3B82F6'
+        }
+        setMembers([adminMember])
+        toast.success('Compte administrateur initialisé', {
+          description: `Email: ${DEFAULT_ADMIN_EMAIL}`
+        })
       }
-      setMembers([adminMember])
-      toast.success('Compte administrateur initialisé', {
-        description: `Email: ${DEFAULT_ADMIN_EMAIL}`
-      })
     }
   }, [])
 
@@ -64,7 +71,7 @@ export default function AuthView() {
       return
     }
 
-    const currentMembers = await window.spark.kv.get<Member[]>('members') || []
+    const currentMembers = await storage.get<Member[]>('members') || []
     const member = currentMembers.find(m => m.email === loginData.email)
     
     if (!member) {
@@ -100,7 +107,7 @@ export default function AuthView() {
       return
     }
 
-    const currentMembers = await window.spark.kv.get<Member[]>('members') || []
+    const currentMembers = await storage.get<Member[]>('members') || []
     const emailExists = currentMembers.some(m => m.email === registerData.email)
     if (emailExists) {
       toast.error('Cet email est déjà utilisé')
@@ -121,7 +128,7 @@ export default function AuthView() {
     const updatedMembers = [...currentMembers, newMember]
     
     // Save to storage and wait for it to complete
-    await window.spark.kv.set('members', updatedMembers)
+    await storage.set('members', updatedMembers)
     setMembers(updatedMembers)
     setCurrentMember(newMember)
     toast.success(isFirstUser ? 'Compte administrateur créé!' : 'Inscription réussie!')

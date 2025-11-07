@@ -1,4 +1,4 @@
-import { useKV } from '@github/spark/hooks'
+import { useStorage } from '@/hooks/useStorage'
 import { CurrencyCircleDollar, Calendar } from '@phosphor-icons/react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -9,8 +9,8 @@ const DAILY_RATE = 25
 const PERSON_RATE = 10
 
 export default function FinancesView() {
-  const [members] = useKV<Member[]>('members', [])
-  const [reservations] = useKV<Reservation[]>('reservations', [])
+  const [members] = useStorage<Member[]>('members', [])
+  const [reservations] = useStorage<Reservation[]>('reservations', [])
 
   const contributions = useMemo(() => {
     const memberContributions: { [key: string]: FinancialContribution } = {}

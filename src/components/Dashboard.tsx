@@ -1,4 +1,4 @@
-import { useKV } from '@github/spark/hooks'
+import { useStorage } from '@/hooks/useStorage'
 import { Calendar, CurrencyCircleDollar, Flame, Lightning, CalendarCheck } from '@phosphor-icons/react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -7,9 +7,9 @@ import { format, isAfter, isBefore, startOfToday } from 'date-fns'
 import { fr } from 'date-fns/locale'
 
 export default function Dashboard() {
-  const [currentMember] = useKV<Member | null>('current-member', null)
-  const [reservations] = useKV<Reservation[]>('reservations', [])
-  const [consumptionRecords] = useKV<ConsumptionRecord[]>('consumption-records', [])
+  const [currentMember] = useStorage<Member | null>('current-member', null)
+  const [reservations] = useStorage<Reservation[]>('reservations', [])
+  const [consumptionRecords] = useStorage<ConsumptionRecord[]>('consumption-records', [])
 
   const today = startOfToday()
   

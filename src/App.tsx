@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useKV } from '@github/spark/hooks'
+import { useStorage } from '@/hooks/useStorage'
 import { House, Calendar, CurrencyCircleDollar, Flame, Users, List, SignOut } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
@@ -16,8 +16,8 @@ type View = 'dashboard' | 'calendar' | 'finances' | 'consumption' | 'members'
 
 function App() {
   const [currentView, setCurrentView] = useState<View>('dashboard')
-  const [currentMember, setCurrentMember] = useKV<Member | null>('current-member', null)
-  const [members] = useKV<Member[]>('members', [])
+  const [currentMember, setCurrentMember] = useStorage<Member | null>('current-member', null)
+  const [members] = useStorage<Member[]>('members', [])
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   useEffect(() => {

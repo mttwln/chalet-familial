@@ -1,4 +1,4 @@
-import { useKV } from '@github/spark/hooks'
+import { useStorage } from '@/hooks/useStorage'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Member } from '@/lib/types'
@@ -7,7 +7,7 @@ import { Trash, Eye, EyeSlash } from '@phosphor-icons/react'
 import { useState } from 'react'
 
 export default function DataDebugView({ onClose }: { onClose: () => void }) {
-  const [members, setMembers] = useKV<Member[]>('members', [])
+  const [members, setMembers] = useStorage<Member[]>('members', [])
   const [showPasswords, setShowPasswords] = useState(false)
 
   const handleClearAllData = () => {

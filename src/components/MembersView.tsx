@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useKV } from '@github/spark/hooks'
+import { useStorage } from '@/hooks/useStorage'
 import { Plus, Trash, UserCircle, UsersThree } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -20,8 +20,8 @@ interface MembersViewProps {
 }
 
 export default function MembersView({ isFirstTime = false }: MembersViewProps) {
-  const [members, setMembers] = useKV<Member[]>('members', [])
-  const [currentMember, setCurrentMember] = useKV<Member | null>('current-member', null)
+  const [members, setMembers] = useStorage<Member[]>('members', [])
+  const [currentMember, setCurrentMember] = useStorage<Member | null>('current-member', null)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingMember, setEditingMember] = useState<Member | null>(null)
   const [formData, setFormData] = useState({ name: '', email: '', password: '', role: 'user' as 'admin' | 'user' })
