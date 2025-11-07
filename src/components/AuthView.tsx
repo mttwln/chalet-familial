@@ -118,7 +118,11 @@ export default function AuthView() {
       avatarColor: AVATAR_COLORS[Math.floor(Math.random() * AVATAR_COLORS.length)]
     }
 
-    setMembers((current) => [...(current || []), newMember])
+    const updatedMembers = [...currentMembers, newMember]
+    
+    // Save to storage and wait for it to complete
+    await window.spark.kv.set('members', updatedMembers)
+    setMembers(updatedMembers)
     setCurrentMember(newMember)
     toast.success(isFirstUser ? 'Compte administrateur créé!' : 'Inscription réussie!')
   }
