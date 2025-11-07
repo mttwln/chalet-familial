@@ -45,6 +45,8 @@ npm run dev
 
 L'application sera accessible sur `http://localhost:5173`
 
+**👉 Pour un guide complet de démarrage et déploiement, consultez [QUICKSTART.md](QUICKSTART.md)**
+
 ### Build de production
 
 ```bash
