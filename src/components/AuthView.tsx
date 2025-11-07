@@ -45,12 +45,16 @@ export default function AuthView() {
       try {
         // Try to call setup endpoint to check if database is available
         const response = await fetch('/api/setup', { method: 'POST' })
-        const data = await response.json()
-        
-        // Database is available if we get 200 OK (initialized or just initialized)
-        if (response.ok && data.initialized) {
-          setUseDatabase(true)
-          return
+        try {
+          const data = await response.json()
+          // Database is available if we get 200 OK (initialized or just initialized)
+          if (response.ok && data.initialized) {
+            setUseDatabase(true)
+            return
+          }
+        } catch (jsonError) {
+          // Response is not JSON, database likely not available
+          console.log('Database response invalid, using localStorage')
         }
       } catch (error) {
         // Database not available, use localStorage

@@ -3,7 +3,7 @@ import jwt from 'jsonwebtoken';
 
 const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET) {
-  throw new Error('JWT_SECRET environment variable is required for secure authentication');
+  throw new Error('Authentication configuration error: missing required environment variable');
 }
 
 const SALT_ROUNDS = 10;
