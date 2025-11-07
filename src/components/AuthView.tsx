@@ -45,8 +45,10 @@ export default function AuthView() {
       try {
         // Try to call setup endpoint to check if database is available
         const response = await fetch('/api/setup', { method: 'POST' })
-        if (response.ok || response.status === 500) {
-          // Database is available (either initialized or needs setup)
+        const data = await response.json()
+        
+        // Database is available if we get 200 OK (initialized or just initialized)
+        if (response.ok && data.initialized) {
           setUseDatabase(true)
           return
         }

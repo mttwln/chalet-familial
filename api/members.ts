@@ -84,6 +84,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(400).json({ error: 'Vous ne pouvez pas supprimer votre propre compte' });
       }
 
+      // Check if this is the last admin
+      const adminCount = await sql`SELECT COUNT(*) as count FROM members WHERE role = 'admin'`;
+      const memberToDelete = await sql`SELECT role FROM members WHERE id = ${parseInt(id)}`;
+      
+      if (memberToDelete.rows.length > 0 && 
+          memberToDelete.rows[0].role === 'admin' && 
+          parseInt(adminCount.rows[0].count) <= 1) {
+        return res.status(400).json({ error: 'Impossible de supprimer le dernier administrateur' });
+      }
+
       await sql`DELETE FROM members WHERE id = ${parseInt(id)}`;
 
       return res.status(200).json({ message: 'Membre supprimé' });
