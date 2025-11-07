@@ -11,6 +11,7 @@ import { toast } from 'sonner'
 import DataDebugView from '@/components/DataDebugView'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { storage } from '@/lib/storage'
+import { authApi, setupApi, getAuthToken } from '@/lib/api-client'
 
 const AVATAR_COLORS = [
   '#3B82F6', '#8B5CF6', '#EC4899', '#10B981', '#F59E0B', 
@@ -27,6 +28,8 @@ export default function AuthView() {
   const [showPassword, setShowPassword] = useState(false)
   const [showDebug, setShowDebug] = useState(false)
   const [linkCopied, setLinkCopied] = useState(false)
+  const [useDatabase, setUseDatabase] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
   
   const [loginData, setLoginData] = useState({ email: '', password: '' })
   const [registerData, setRegisterData] = useState({ 
@@ -37,26 +40,48 @@ export default function AuthView() {
   })
 
   useEffect(() => {
-    // Only initialize default admin if there are truly no members
-    // Don't run this if members array is just loading
-    if (members && members.length === 0) {
-      // Check localStorage directly to avoid race condition
-      const storedMembers = localStorage.getItem('chalet-familial:members')
-      if (!storedMembers || storedMembers === '[]') {
-        const adminMember: Member = {
-          id: Date.now().toString(),
-          name: DEFAULT_ADMIN_NAME,
-          email: DEFAULT_ADMIN_EMAIL,
-          password: DEFAULT_ADMIN_PASSWORD,
-          role: 'admin',
-          avatarColor: '#3B82F6'
+    // Check if we should use database or localStorage
+    const checkDatabaseAvailability = async () => {
+      try {
+        // Try to call setup endpoint to check if database is available
+        const response = await fetch('/api/setup', { method: 'POST' })
+        try {
+          const data = await response.json()
+          // Database is available if we get 200 OK (initialized or just initialized)
+          if (response.ok && data.initialized) {
+            setUseDatabase(true)
+            return
+          }
+        } catch (jsonError) {
+          // Response is not JSON, database likely not available
+          console.log('Database response invalid, using localStorage')
         }
-        setMembers([adminMember])
-        toast.success('Compte administrateur initialisé', {
-          description: `Email: ${DEFAULT_ADMIN_EMAIL}`
-        })
+      } catch (error) {
+        // Database not available, use localStorage
+        console.log('Database not available, using localStorage')
+      }
+      
+      // Fallback to localStorage initialization
+      if (members && members.length === 0) {
+        const storedMembers = localStorage.getItem('chalet-familial:members')
+        if (!storedMembers || storedMembers === '[]') {
+          const adminMember: Member = {
+            id: Date.now().toString(),
+            name: DEFAULT_ADMIN_NAME,
+            email: DEFAULT_ADMIN_EMAIL,
+            password: DEFAULT_ADMIN_PASSWORD,
+            role: 'admin',
+            avatarColor: '#3B82F6'
+          }
+          setMembers([adminMember])
+          toast.success('Compte administrateur initialisé (mode local)', {
+            description: `Email: ${DEFAULT_ADMIN_EMAIL}`
+          })
+        }
       }
     }
+
+    checkDatabaseAvailability()
   }, [])
 
   if (showDebug) {
@@ -71,21 +96,49 @@ export default function AuthView() {
       return
     }
 
-    const currentMembers = await storage.get<Member[]>('members') || []
-    const member = currentMembers.find(m => m.email === loginData.email)
-    
-    if (!member) {
-      toast.error('Email non trouvé')
-      return
-    }
+    setIsLoading(true)
 
-    if (member.password !== loginData.password) {
-      toast.error('Mot de passe incorrect')
-      return
-    }
+    try {
+      if (useDatabase) {
+        // Use database API
+        const response = await authApi.login(loginData.email, loginData.password)
+        
+        if (response.error) {
+          toast.error(response.error)
+          setIsLoading(false)
+          return
+        }
 
-    setCurrentMember(member)
-    toast.success(`Bienvenue ${member.name}!`)
+        if (response.data?.user) {
+          setCurrentMember(response.data.user)
+          toast.success(response.message || `Bienvenue ${response.data.user.name}!`)
+        }
+      } else {
+        // Use localStorage
+        const currentMembers = await storage.get<Member[]>('members') || []
+        const member = currentMembers.find(m => m.email === loginData.email)
+        
+        if (!member) {
+          toast.error('Email non trouvé')
+          setIsLoading(false)
+          return
+        }
+
+        if (member.password !== loginData.password) {
+          toast.error('Mot de passe incorrect')
+          setIsLoading(false)
+          return
+        }
+
+        setCurrentMember(member)
+        toast.success(`Bienvenue ${member.name}!`)
+      }
+    } catch (error) {
+      console.error('Login error:', error)
+      toast.error('Erreur lors de la connexion')
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   const handleRegister = async (e: React.FormEvent) => {
@@ -107,31 +160,61 @@ export default function AuthView() {
       return
     }
 
-    const currentMembers = await storage.get<Member[]>('members') || []
-    const emailExists = currentMembers.some(m => m.email === registerData.email)
-    if (emailExists) {
-      toast.error('Cet email est déjà utilisé')
-      return
+    setIsLoading(true)
+
+    try {
+      if (useDatabase) {
+        // Use database API
+        const response = await authApi.register(
+          registerData.name,
+          registerData.email,
+          registerData.password
+        )
+        
+        if (response.error) {
+          toast.error(response.error)
+          setIsLoading(false)
+          return
+        }
+
+        if (response.data?.user) {
+          setCurrentMember(response.data.user)
+          toast.success(response.message || 'Inscription réussie!')
+        }
+      } else {
+        // Use localStorage
+        const currentMembers = await storage.get<Member[]>('members') || []
+        const emailExists = currentMembers.some(m => m.email === registerData.email)
+        if (emailExists) {
+          toast.error('Cet email est déjà utilisé')
+          setIsLoading(false)
+          return
+        }
+
+        const isFirstUser = currentMembers.length === 0
+
+        const newMember: Member = {
+          id: Date.now().toString(),
+          name: registerData.name,
+          email: registerData.email,
+          password: registerData.password,
+          role: isFirstUser ? 'admin' : 'user',
+          avatarColor: AVATAR_COLORS[Math.floor(Math.random() * AVATAR_COLORS.length)]
+        }
+
+        const updatedMembers = [...currentMembers, newMember]
+        
+        await storage.set('members', updatedMembers)
+        setMembers(updatedMembers)
+        setCurrentMember(newMember)
+        toast.success(isFirstUser ? 'Compte administrateur créé!' : 'Inscription réussie!')
+      }
+    } catch (error) {
+      console.error('Registration error:', error)
+      toast.error('Erreur lors de l\'inscription')
+    } finally {
+      setIsLoading(false)
     }
-
-    const isFirstUser = currentMembers.length === 0
-
-    const newMember: Member = {
-      id: Date.now().toString(),
-      name: registerData.name,
-      email: registerData.email,
-      password: registerData.password,
-      role: isFirstUser ? 'admin' : 'user',
-      avatarColor: AVATAR_COLORS[Math.floor(Math.random() * AVATAR_COLORS.length)]
-    }
-
-    const updatedMembers = [...currentMembers, newMember]
-    
-    // Save to storage and wait for it to complete
-    await storage.set('members', updatedMembers)
-    setMembers(updatedMembers)
-    setCurrentMember(newMember)
-    toast.success(isFirstUser ? 'Compte administrateur créé!' : 'Inscription réussie!')
   }
 
   const isFirstUser = !members || members.length === 0
@@ -223,8 +306,8 @@ export default function AuthView() {
                   placeholder="Répétez le mot de passe"
                 />
               </div>
-              <Button type="submit" className="w-full mt-2">
-                Créer mon compte administrateur
+              <Button type="submit" className="w-full mt-2" disabled={isLoading}>
+                {isLoading ? 'Création en cours...' : 'Créer mon compte administrateur'}
               </Button>
             </form>
           ) : (
@@ -292,8 +375,8 @@ export default function AuthView() {
                       </button>
                     </div>
                   </div>
-                  <Button type="submit" className="w-full mt-2">
-                    Se connecter
+                  <Button type="submit" className="w-full mt-2" disabled={isLoading}>
+                    {isLoading ? 'Connexion...' : 'Se connecter'}
                   </Button>
                 </form>
               </TabsContent>
@@ -348,8 +431,8 @@ export default function AuthView() {
                       placeholder="Répétez le mot de passe"
                     />
                   </div>
-                  <Button type="submit" className="w-full mt-2">
-                    S'inscrire
+                  <Button type="submit" className="w-full mt-2" disabled={isLoading}>
+                    {isLoading ? 'Inscription...' : 'S\'inscrire'}
                   </Button>
                 </form>
               </TabsContent>
