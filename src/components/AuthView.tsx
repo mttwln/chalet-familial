@@ -14,6 +14,9 @@ const AVATAR_COLORS = [
   '#EF4444', '#06B6D4', '#6366F1', '#84CC16', '#F97316'
 ]
 
+const GRADIENT_BUTTON_CLASS = "bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700"
+const PASSWORD_TOGGLE_CLASS = "absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+
 export default function AuthView() {
   const [members, setMembers] = useStorage<Member[]>('members', [])
   const [, setCurrentMember] = useStorage<Member | null>('current-member', null)
@@ -92,7 +95,7 @@ export default function AuthView() {
     const newMember: Member = {
       id: Date.now().toString(),
       name: registerData.name,
-      email: registerData.email.toLowerCase(),
+      email: registerData.email,
       password: registerData.password,
       role: isFirstUser ? 'admin' : 'user',
       avatarColor: AVATAR_COLORS[Math.floor(Math.random() * AVATAR_COLORS.length)]
@@ -161,7 +164,7 @@ export default function AuthView() {
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                    className={PASSWORD_TOGGLE_CLASS}
                   >
                     {showPassword ? <EyeSlash size={20} /> : <Eye size={20} />}
                   </button>
@@ -178,7 +181,7 @@ export default function AuthView() {
                   autoComplete="new-password"
                 />
               </div>
-              <Button type="submit" className="w-full mt-2 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700" disabled={isLoading}>
+              <Button type="submit" className={`w-full mt-2 ${GRADIENT_BUTTON_CLASS}`} disabled={isLoading}>
                 {isLoading ? 'Création en cours...' : 'Créer mon compte administrateur'}
               </Button>
             </form>
@@ -216,13 +219,13 @@ export default function AuthView() {
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                        className={PASSWORD_TOGGLE_CLASS}
                       >
                         {showPassword ? <EyeSlash size={20} /> : <Eye size={20} />}
                       </button>
                     </div>
                   </div>
-                  <Button type="submit" className="w-full mt-2 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700" disabled={isLoading}>
+                  <Button type="submit" className={`w-full mt-2 ${GRADIENT_BUTTON_CLASS}`} disabled={isLoading}>
                     {isLoading ? 'Connexion...' : 'Se connecter'}
                   </Button>
                 </form>
@@ -265,7 +268,7 @@ export default function AuthView() {
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                        className={PASSWORD_TOGGLE_CLASS}
                       >
                         {showPassword ? <EyeSlash size={20} /> : <Eye size={20} />}
                       </button>
@@ -282,7 +285,7 @@ export default function AuthView() {
                       autoComplete="new-password"
                     />
                   </div>
-                  <Button type="submit" className="w-full mt-2 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700" disabled={isLoading}>
+                  <Button type="submit" className={`w-full mt-2 ${GRADIENT_BUTTON_CLASS}`} disabled={isLoading}>
                     {isLoading ? 'Inscription...' : 'S\'inscrire'}
                   </Button>
                 </form>
