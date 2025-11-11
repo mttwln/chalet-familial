@@ -5,20 +5,17 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
-import { Member, Reservation } from '@/lib/types'
+import { Reservation } from '@/lib/types'
 import { toast } from 'sonner'
 import { format, isSameDay, isWithinInterval, startOfMonth, endOfMonth, eachDayOfInterval, isBefore, isAfter, startOfWeek, endOfWeek, addMonths, subMonths, addDays, isSameMonth } from 'date-fns'
 import { fr } from 'date-fns/locale'
 
 export default function CalendarView() {
-  const [currentMember] = useStorage<Member | null>('current-member', null)
-  const [members] = useStorage<Member[]>('members', [])
   const [reservations, setReservations] = useStorage<Reservation[]>('reservations', [])
   const [isDialogOpen, setIsDialogOpen] = useState(false)
-  const [selectedMemberId, setSelectedMemberId] = useState<string>('')
+  const [memberName, setMemberName] = useState('')
   const [numberOfPeople, setNumberOfPeople] = useState('2')
   const [selectionStartDate, setSelectionStartDate] = useState<Date | null>(null)
   const [selectionEndDate, setSelectionEndDate] = useState<Date | null>(null)
@@ -54,13 +51,10 @@ export default function CalendarView() {
       return
     }
 
-    if (!selectedMemberId) {
-      toast.error('Veuillez sélectionner un membre')
+    if (!memberName.trim()) {
+      toast.error('Veuillez entrer un nom')
       return
     }
-
-    const member = (members || []).find(m => m.id === selectedMemberId)
-    if (!member) return
 
     const hasOverlap = (reservations || []).some(r => {
       const resStart = new Date(r.startDate)
@@ -79,8 +73,8 @@ export default function CalendarView() {
 
     const newReservation: Reservation = {
       id: Date.now().toString(),
-      memberId: member.id,
-      memberName: member.name,
+      memberId: Date.now().toString(), // Simple ID
+      memberName: memberName.trim(),
       startDate: selectionStartDate.toISOString(),
       endDate: selectionEndDate.toISOString(),
       numberOfPeople: parseInt(numberOfPeople),
@@ -147,19 +141,13 @@ export default function CalendarView() {
             <form onSubmit={handleSubmit}>
               <div className="flex flex-col gap-4 py-4">
                 <div className="flex flex-col gap-2">
-                  <Label htmlFor="member">Membre</Label>
-                  <Select value={selectedMemberId} onValueChange={setSelectedMemberId}>
-                    <SelectTrigger id="member">
-                      <SelectValue placeholder="Sélectionner un membre" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {(members || []).map(member => (
-                        <SelectItem key={member.id} value={member.id}>
-                          {member.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Label htmlFor="memberName">Nom</Label>
+                  <Input
+                    id="memberName"
+                    placeholder="Entrez votre nom"
+                    value={memberName}
+                    onChange={(e) => setMemberName(e.target.value)}
+                  />
                 </div>
 
                 <div className="flex flex-col gap-2">
@@ -350,15 +338,17 @@ export default function CalendarView() {
                       {dayReservations.length > 0 && (
                         <div className="flex flex-col gap-1">
                           {dayReservations.slice(0, 2).map((res) => {
-                            const member = (members || []).find(m => m.id === res.memberId)
+                            const colors = ['#3B82F6', '#8B5CF6', '#EC4899', '#10B981', '#F59E0B']
+                            const colorIndex = parseInt(res.id) % colors.length
+                            const color = colors[colorIndex]
                             return (
                               <div
                                 key={res.id}
                                 className="text-xs px-2 py-1 rounded truncate"
                                 style={{ 
-                                  backgroundColor: member?.avatarColor + '15',
-                                  color: member?.avatarColor,
-                                  borderLeft: `3px solid ${member?.avatarColor}`
+                                  backgroundColor: color + '15',
+                                  color: color,
+                                  borderLeft: `3px solid ${color}`
                                 }}
                                 title={res.memberName}
                               >
@@ -392,20 +382,20 @@ export default function CalendarView() {
                 {(reservations || [])
                   .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime())
                   .map((reservation) => {
-                    const member = (members || []).find(m => m.id === reservation.memberId)
+                    const colors = ['#3B82F6', '#8B5CF6', '#EC4899', '#10B981', '#F59E0B']
+                    const colorIndex = parseInt(reservation.id) % colors.length
+                    const color = colors[colorIndex]
                     return (
                       <div key={reservation.id} className="p-3 border border-border rounded-lg">
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
                             <div className="flex items-center gap-2">
-                              {member && (
-                                <div
-                                  className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-semibold"
-                                  style={{ backgroundColor: member.avatarColor }}
-                                >
-                                  {member.name.charAt(0).toUpperCase()}
-                                </div>
-                              )}
+                              <div
+                                className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-semibold"
+                                style={{ backgroundColor: color }}
+                              >
+                                {reservation.memberName.charAt(0).toUpperCase()}
+                              </div>
                               <p className="font-medium text-sm">{reservation.memberName}</p>
                             </div>
                             <p className="text-xs text-muted-foreground mt-1">
@@ -421,16 +411,14 @@ export default function CalendarView() {
                               </Badge>
                             </div>
                           </div>
-                          {(currentMember?.role === 'admin' || currentMember?.id === reservation.memberId) && (
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8"
-                              onClick={() => handleDelete(reservation.id)}
-                            >
-                              <X size={16} />
-                            </Button>
-                          )}
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={() => handleDelete(reservation.id)}
+                          >
+                            <X size={16} />
+                          </Button>
                         </div>
                       </div>
                     )

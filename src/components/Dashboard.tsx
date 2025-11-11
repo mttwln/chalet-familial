@@ -2,12 +2,11 @@ import { useStorage } from '@/hooks/useStorage'
 import { Calendar, CurrencyCircleDollar, Flame, Lightning, CalendarCheck } from '@phosphor-icons/react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Member, Reservation, ConsumptionRecord } from '@/lib/types'
+import { Reservation, ConsumptionRecord } from '@/lib/types'
 import { format, isAfter, isBefore, startOfToday } from 'date-fns'
 import { fr } from 'date-fns/locale'
 
 export default function Dashboard() {
-  const [currentMember] = useStorage<Member | null>('current-member', null)
   const [reservations] = useStorage<Reservation[]>('reservations', [])
   const [consumptionRecords] = useStorage<ConsumptionRecord[]>('consumption-records', [])
 
@@ -18,8 +17,6 @@ export default function Dashboard() {
                  (isAfter(new Date(r.endDate), today) && isBefore(new Date(r.startDate), today)))
     .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime())
     .slice(0, 3)
-
-  const myReservations = (reservations || []).filter(r => r.memberId === currentMember?.id)
   
   const fioulRecords = (consumptionRecords || [])
     .filter(r => r.type === 'fioul')
@@ -32,34 +29,14 @@ export default function Dashboard() {
   const latestFioul = fioulRecords[0]
   const latestElectricite = electriciteRecords[0]
 
-  const totalReservationDays = myReservations.reduce((sum, res) => {
-    const start = new Date(res.startDate)
-    const end = new Date(res.endDate)
-    const days = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24))
-    return sum + days
-  }, 0)
-
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h2 className="text-3xl font-bold text-foreground">Bonjour, {currentMember?.name} !</h2>
+        <h2 className="text-3xl font-bold text-foreground">Bienvenue !</h2>
         <p className="text-muted-foreground mt-1">Bienvenue dans votre espace de gestion du chalet</p>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Mes réservations</CardTitle>
-            <Calendar className="text-muted-foreground" size={20} />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{myReservations.length}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {totalReservationDays} jours au total
-            </p>
-          </CardContent>
-        </Card>
-
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Réservations totales</CardTitle>
@@ -68,7 +45,7 @@ export default function Dashboard() {
           <CardContent>
             <div className="text-2xl font-bold">{(reservations || []).length}</div>
             <p className="text-xs text-muted-foreground mt-1">
-              Toutes les familles
+              Toutes les réservations
             </p>
           </CardContent>
         </Card>
