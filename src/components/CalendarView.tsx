@@ -86,7 +86,7 @@ export default function CalendarView() {
     setIsDialogOpen(false)
     setSelectionStartDate(null)
     setSelectionEndDate(null)
-    setSelectedMemberId('')
+    setMemberName('')
     setNumberOfPeople('2')
     setDialogMonth(new Date())
   }
