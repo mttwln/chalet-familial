@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useStorage } from '@/hooks/useStorage'
-import { House, Eye, EyeSlash, Gear, Copy, Check, Link } from '@phosphor-icons/react'
+import { House, Eye, EyeSlash } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -8,27 +8,19 @@ import { Label } from '@/components/ui/label'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Member } from '@/lib/types'
 import { toast } from 'sonner'
-import DataDebugView from '@/components/DataDebugView'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { storage } from '@/lib/storage'
-import { authApi, setupApi, getAuthToken } from '@/lib/api-client'
 
 const AVATAR_COLORS = [
   '#3B82F6', '#8B5CF6', '#EC4899', '#10B981', '#F59E0B', 
   '#EF4444', '#06B6D4', '#6366F1', '#84CC16', '#F97316'
 ]
 
-const DEFAULT_ADMIN_EMAIL = 'matthieu.weinlein@gmx.net'
-const DEFAULT_ADMIN_PASSWORD = 'Admin2024!'
-const DEFAULT_ADMIN_NAME = 'Matthieu Weinlein'
+const GRADIENT_BUTTON_CLASS = "bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700"
+const PASSWORD_TOGGLE_CLASS = "absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
 
 export default function AuthView() {
   const [members, setMembers] = useStorage<Member[]>('members', [])
   const [, setCurrentMember] = useStorage<Member | null>('current-member', null)
   const [showPassword, setShowPassword] = useState(false)
-  const [showDebug, setShowDebug] = useState(false)
-  const [linkCopied, setLinkCopied] = useState(false)
-  const [useDatabase, setUseDatabase] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   
   const [loginData, setLoginData] = useState({ email: '', password: '' })
@@ -39,56 +31,7 @@ export default function AuthView() {
     confirmPassword: '' 
   })
 
-  useEffect(() => {
-    // Check if we should use database or localStorage
-    const checkDatabaseAvailability = async () => {
-      try {
-        // Try to call setup endpoint to check if database is available
-        const response = await fetch('/api/setup', { method: 'POST' })
-        try {
-          const data = await response.json()
-          // Database is available if we get 200 OK (initialized or just initialized)
-          if (response.ok && data.initialized) {
-            setUseDatabase(true)
-            return
-          }
-        } catch (jsonError) {
-          // Response is not JSON, database likely not available
-          console.log('Database response invalid, using localStorage')
-        }
-      } catch (error) {
-        // Database not available, use localStorage
-        console.log('Database not available, using localStorage')
-      }
-      
-      // Fallback to localStorage initialization
-      if (members && members.length === 0) {
-        const storedMembers = localStorage.getItem('chalet-familial:members')
-        if (!storedMembers || storedMembers === '[]') {
-          const adminMember: Member = {
-            id: Date.now().toString(),
-            name: DEFAULT_ADMIN_NAME,
-            email: DEFAULT_ADMIN_EMAIL,
-            password: DEFAULT_ADMIN_PASSWORD,
-            role: 'admin',
-            avatarColor: '#3B82F6'
-          }
-          setMembers([adminMember])
-          toast.success('Compte administrateur initialisé (mode local)', {
-            description: `Email: ${DEFAULT_ADMIN_EMAIL}`
-          })
-        }
-      }
-    }
-
-    checkDatabaseAvailability()
-  }, [])
-
-  if (showDebug) {
-    return <DataDebugView onClose={() => setShowDebug(false)} />
-  }
-
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleLogin = (e: React.FormEvent) => {
     e.preventDefault()
 
     if (!loginData.email.trim() || !loginData.password.trim()) {
@@ -98,50 +41,27 @@ export default function AuthView() {
 
     setIsLoading(true)
 
-    try {
-      if (useDatabase) {
-        // Use database API
-        const response = await authApi.login(loginData.email, loginData.password)
-        
-        if (response.error) {
-          toast.error(response.error)
-          setIsLoading(false)
-          return
-        }
-
-        if (response.data?.user) {
-          setCurrentMember(response.data.user)
-          toast.success(response.message || `Bienvenue ${response.data.user.name}!`)
-        }
-      } else {
-        // Use localStorage
-        const currentMembers = await storage.get<Member[]>('members') || []
-        const member = currentMembers.find(m => m.email === loginData.email)
-        
-        if (!member) {
-          toast.error('Email non trouvé')
-          setIsLoading(false)
-          return
-        }
-
-        if (member.password !== loginData.password) {
-          toast.error('Mot de passe incorrect')
-          setIsLoading(false)
-          return
-        }
-
-        setCurrentMember(member)
-        toast.success(`Bienvenue ${member.name}!`)
-      }
-    } catch (error) {
-      console.error('Login error:', error)
-      toast.error('Erreur lors de la connexion')
-    } finally {
+    // Simple localStorage-based login
+    const member = members.find(m => m.email.toLowerCase() === loginData.email.toLowerCase())
+    
+    if (!member) {
+      toast.error('Email non trouvé')
       setIsLoading(false)
+      return
     }
+
+    if (member.password !== loginData.password) {
+      toast.error('Mot de passe incorrect')
+      setIsLoading(false)
+      return
+    }
+
+    setCurrentMember(member)
+    toast.success(`Bienvenue ${member.name}!`)
+    setIsLoading(false)
   }
 
-  const handleRegister = async (e: React.FormEvent) => {
+  const handleRegister = (e: React.FormEvent) => {
     e.preventDefault()
 
     if (!registerData.name.trim() || !registerData.email.trim() || 
@@ -162,98 +82,49 @@ export default function AuthView() {
 
     setIsLoading(true)
 
-    try {
-      if (useDatabase) {
-        // Use database API
-        const response = await authApi.register(
-          registerData.name,
-          registerData.email,
-          registerData.password
-        )
-        
-        if (response.error) {
-          toast.error(response.error)
-          setIsLoading(false)
-          return
-        }
-
-        if (response.data?.user) {
-          setCurrentMember(response.data.user)
-          toast.success(response.message || 'Inscription réussie!')
-        }
-      } else {
-        // Use localStorage
-        const currentMembers = await storage.get<Member[]>('members') || []
-        const emailExists = currentMembers.some(m => m.email === registerData.email)
-        if (emailExists) {
-          toast.error('Cet email est déjà utilisé')
-          setIsLoading(false)
-          return
-        }
-
-        const isFirstUser = currentMembers.length === 0
-
-        const newMember: Member = {
-          id: Date.now().toString(),
-          name: registerData.name,
-          email: registerData.email,
-          password: registerData.password,
-          role: isFirstUser ? 'admin' : 'user',
-          avatarColor: AVATAR_COLORS[Math.floor(Math.random() * AVATAR_COLORS.length)]
-        }
-
-        const updatedMembers = [...currentMembers, newMember]
-        
-        await storage.set('members', updatedMembers)
-        setMembers(updatedMembers)
-        setCurrentMember(newMember)
-        toast.success(isFirstUser ? 'Compte administrateur créé!' : 'Inscription réussie!')
-      }
-    } catch (error) {
-      console.error('Registration error:', error)
-      toast.error('Erreur lors de l\'inscription')
-    } finally {
+    // Check if email already exists
+    const emailExists = members.some(m => m.email.toLowerCase() === registerData.email.toLowerCase())
+    if (emailExists) {
+      toast.error('Cet email est déjà utilisé')
       setIsLoading(false)
+      return
     }
+
+    const isFirstUser = members.length === 0
+
+    const newMember: Member = {
+      id: Date.now().toString(),
+      name: registerData.name,
+      email: registerData.email,
+      password: registerData.password,
+      role: isFirstUser ? 'admin' : 'user',
+      avatarColor: AVATAR_COLORS[Math.floor(Math.random() * AVATAR_COLORS.length)]
+    }
+
+    const updatedMembers = [...members, newMember]
+    setMembers(updatedMembers)
+    setCurrentMember(newMember)
+    toast.success(isFirstUser ? 'Compte administrateur créé!' : 'Inscription réussie!')
+    setIsLoading(false)
   }
 
-  const isFirstUser = !members || members.length === 0
-
-  const handleCopyLink = async () => {
-    const currentUrl = window.location.href
-    try {
-      await navigator.clipboard.writeText(currentUrl)
-      setLinkCopied(true)
-      toast.success('Lien copié dans le presse-papier!')
-      setTimeout(() => setLinkCopied(false), 3000)
-    } catch (err) {
-      toast.error('Impossible de copier le lien')
-    }
-  }
+  const isFirstUser = members.length === 0
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <div className="absolute top-4 right-4">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setShowDebug(true)}
-          title="Voir les données stockées"
-        >
-          <Gear size={20} />
-        </Button>
-      </div>
-      <Card className="max-w-md w-full">
-        <CardHeader className="text-center">
-          <div className="w-16 h-16 bg-primary rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <House weight="fill" className="text-primary-foreground" size={32} />
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4">
+      <Card className="max-w-md w-full shadow-xl">
+        <CardHeader className="text-center space-y-4">
+          <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center mx-auto shadow-lg">
+            <House weight="fill" className="text-white" size={40} />
           </div>
-          <CardTitle className="text-2xl">Chalet Familial</CardTitle>
-          <CardDescription>
-            {isFirstUser 
-              ? 'Créez le premier compte administrateur' 
-              : 'Gestion & Réservations'}
-          </CardDescription>
+          <div>
+            <CardTitle className="text-3xl font-bold">Chalet Familial</CardTitle>
+            <CardDescription className="text-base mt-2">
+              {isFirstUser 
+                ? 'Créez le premier compte administrateur' 
+                : 'Connectez-vous ou créez un compte'}
+            </CardDescription>
+          </div>
         </CardHeader>
         <CardContent>
           {isFirstUser ? (
@@ -265,6 +136,7 @@ export default function AuthView() {
                   value={registerData.name}
                   onChange={(e) => setRegisterData(prev => ({ ...prev, name: e.target.value }))}
                   placeholder="Jean Dupont"
+                  autoComplete="name"
                 />
               </div>
               <div className="flex flex-col gap-2">
@@ -275,6 +147,7 @@ export default function AuthView() {
                   value={registerData.email}
                   onChange={(e) => setRegisterData(prev => ({ ...prev, email: e.target.value }))}
                   placeholder="jean@exemple.fr"
+                  autoComplete="email"
                 />
               </div>
               <div className="flex flex-col gap-2">
@@ -286,11 +159,12 @@ export default function AuthView() {
                     value={registerData.password}
                     onChange={(e) => setRegisterData(prev => ({ ...prev, password: e.target.value }))}
                     placeholder="Au moins 6 caractères"
+                    autoComplete="new-password"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    className={PASSWORD_TOGGLE_CLASS}
                   >
                     {showPassword ? <EyeSlash size={20} /> : <Eye size={20} />}
                   </button>
@@ -304,47 +178,21 @@ export default function AuthView() {
                   value={registerData.confirmPassword}
                   onChange={(e) => setRegisterData(prev => ({ ...prev, confirmPassword: e.target.value }))}
                   placeholder="Répétez le mot de passe"
+                  autoComplete="new-password"
                 />
               </div>
-              <Button type="submit" className="w-full mt-2" disabled={isLoading}>
+              <Button type="submit" className={`w-full mt-2 ${GRADIENT_BUTTON_CLASS}`} disabled={isLoading}>
                 {isLoading ? 'Création en cours...' : 'Créer mon compte administrateur'}
               </Button>
             </form>
           ) : (
-            <>
-              <Alert className="mb-4 bg-muted/50 border-border">
-                <Link className="h-4 w-4" />
-                <AlertDescription className="ml-2 flex flex-col gap-2">
-                  <p className="text-sm font-medium text-foreground">Lien pour votre famille</p>
-                  <p className="text-xs text-muted-foreground">
-                    Partagez ce lien avec les membres de votre famille pour qu'ils puissent s'inscrire
-                  </p>
-                  <div className="flex gap-2 mt-1">
-                    <Input 
-                      readOnly 
-                      value={window.location.href} 
-                      className="text-xs"
-                    />
-                    <Button 
-                      size="sm" 
-                      variant="secondary"
-                      onClick={handleCopyLink}
-                      className="gap-2 shrink-0"
-                    >
-                      {linkCopied ? <Check size={16} /> : <Copy size={16} />}
-                      {linkCopied ? 'Copié' : 'Copier'}
-                    </Button>
-                  </div>
-                </AlertDescription>
-              </Alert>
-
-              <Tabs defaultValue="login" className="w-full">
-                <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="login">Connexion</TabsTrigger>
-                  <TabsTrigger value="register">Inscription</TabsTrigger>
-                </TabsList>
-              
-              <TabsContent value="login" className="mt-4">
+            <Tabs defaultValue="login" className="w-full">
+              <TabsList className="grid w-full grid-cols-2 mb-6">
+                <TabsTrigger value="login">Connexion</TabsTrigger>
+                <TabsTrigger value="register">Inscription</TabsTrigger>
+              </TabsList>
+            
+              <TabsContent value="login" className="mt-0">
                 <form onSubmit={handleLogin} className="flex flex-col gap-4">
                   <div className="flex flex-col gap-2">
                     <Label htmlFor="login-email">Email</Label>
@@ -354,6 +202,7 @@ export default function AuthView() {
                       value={loginData.email}
                       onChange={(e) => setLoginData(prev => ({ ...prev, email: e.target.value }))}
                       placeholder="jean@exemple.fr"
+                      autoComplete="email"
                     />
                   </div>
                   <div className="flex flex-col gap-2">
@@ -365,23 +214,24 @@ export default function AuthView() {
                         value={loginData.password}
                         onChange={(e) => setLoginData(prev => ({ ...prev, password: e.target.value }))}
                         placeholder="Votre mot de passe"
+                        autoComplete="current-password"
                       />
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                        className={PASSWORD_TOGGLE_CLASS}
                       >
                         {showPassword ? <EyeSlash size={20} /> : <Eye size={20} />}
                       </button>
                     </div>
                   </div>
-                  <Button type="submit" className="w-full mt-2" disabled={isLoading}>
+                  <Button type="submit" className={`w-full mt-2 ${GRADIENT_BUTTON_CLASS}`} disabled={isLoading}>
                     {isLoading ? 'Connexion...' : 'Se connecter'}
                   </Button>
                 </form>
               </TabsContent>
-              
-              <TabsContent value="register" className="mt-4">
+            
+              <TabsContent value="register" className="mt-0">
                 <form onSubmit={handleRegister} className="flex flex-col gap-4">
                   <div className="flex flex-col gap-2">
                     <Label htmlFor="reg-name">Nom complet</Label>
@@ -390,6 +240,7 @@ export default function AuthView() {
                       value={registerData.name}
                       onChange={(e) => setRegisterData(prev => ({ ...prev, name: e.target.value }))}
                       placeholder="Jean Dupont"
+                      autoComplete="name"
                     />
                   </div>
                   <div className="flex flex-col gap-2">
@@ -400,6 +251,7 @@ export default function AuthView() {
                       value={registerData.email}
                       onChange={(e) => setRegisterData(prev => ({ ...prev, email: e.target.value }))}
                       placeholder="jean@exemple.fr"
+                      autoComplete="email"
                     />
                   </div>
                   <div className="flex flex-col gap-2">
@@ -411,11 +263,12 @@ export default function AuthView() {
                         value={registerData.password}
                         onChange={(e) => setRegisterData(prev => ({ ...prev, password: e.target.value }))}
                         placeholder="Au moins 6 caractères"
+                        autoComplete="new-password"
                       />
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                        className={PASSWORD_TOGGLE_CLASS}
                       >
                         {showPassword ? <EyeSlash size={20} /> : <Eye size={20} />}
                       </button>
@@ -429,15 +282,15 @@ export default function AuthView() {
                       value={registerData.confirmPassword}
                       onChange={(e) => setRegisterData(prev => ({ ...prev, confirmPassword: e.target.value }))}
                       placeholder="Répétez le mot de passe"
+                      autoComplete="new-password"
                     />
                   </div>
-                  <Button type="submit" className="w-full mt-2" disabled={isLoading}>
+                  <Button type="submit" className={`w-full mt-2 ${GRADIENT_BUTTON_CLASS}`} disabled={isLoading}>
                     {isLoading ? 'Inscription...' : 'S\'inscrire'}
                   </Button>
                 </form>
               </TabsContent>
             </Tabs>
-            </>
           )}
         </CardContent>
       </Card>

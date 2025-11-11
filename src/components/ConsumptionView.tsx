@@ -8,14 +8,13 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { ConsumptionRecord, Member } from '@/lib/types'
+import { ConsumptionRecord } from '@/lib/types'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts'
 
 export default function ConsumptionView() {
-  const [currentMember] = useStorage<Member | null>('current-member', null)
   const [consumptionRecords, setConsumptionRecords] = useStorage<ConsumptionRecord[]>('consumption-records', [])
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [formData, setFormData] = useState({
@@ -39,7 +38,7 @@ export default function ConsumptionView() {
       date: formData.date,
       quantity: parseFloat(formData.quantity),
       cost: parseFloat(formData.cost),
-      addedBy: currentMember?.name || 'Inconnu'
+      addedBy: 'Système'
     }
 
     setConsumptionRecords(current => [...(current || []), newRecord])
